@@ -1,15 +1,14 @@
-import { format, subDays } from "date-fns";
 import {
   collection,
-  doc,
-  getDocs,
   query,
-  setDoc,
-  updateDoc,
   where,
+  getDocs,
+  doc,
+  setDoc,
 } from "firebase/firestore";
-import { Session, SessionLog } from "../types";
+import { format, subDays } from "date-fns";
 import { db } from "./firebase";
+import { Session, SessionLog } from "../types";
 
 const SESSIONS_COLLECTION = "sessions";
 const LOGS_COLLECTION = "session_logs";
@@ -75,34 +74,6 @@ export const skipSession = async (
     claimedAt: Date.now(),
     status: "skipped",
   } satisfies SessionLog);
-};
-
-export const updateSessionTime = async (
-  sessionId: string,
-  time: string,
-): Promise<void> => {
-  await updateDoc(doc(db, SESSIONS_COLLECTION, sessionId), {
-    time,
-    status: "active",
-    updatedAt: Date.now(),
-  });
-};
-
-export const cancelSession = async (
-  sessionId: string,
-  note?: string,
-): Promise<void> => {
-  const payload: Record<string, string | number> = {
-    status: "cancelled",
-    updatedAt: Date.now(),
-  };
-
-  const trimmedNote = note?.trim();
-  if (trimmedNote) {
-    payload.note = trimmedNote;
-  }
-
-  await updateDoc(doc(db, SESSIONS_COLLECTION, sessionId), payload);
 };
 
 export const getSessionsForDateRange = async (

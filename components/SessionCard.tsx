@@ -1,14 +1,9 @@
 import { format, isBefore, parse } from "date-fns";
-import { useState } from "react";
-import {
-  ActivityIndicator,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import React, { useState } from "react";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { theme } from "../constants/theme";
 import { Session, SessionLog } from "../types";
+import Skeleton from "./Skeleton";
 
 interface SessionCardProps {
   session: Session;
@@ -117,10 +112,7 @@ export default function SessionCard({
         <View style={styles.actionSection}>
           <Text style={styles.prompt}>Did you do it?</Text>
           {actionLoading ? (
-            <ActivityIndicator
-              color={theme.colors.primary}
-              style={styles.spinner}
-            />
+            <Skeleton variant="row" style={styles.actionSkeleton} />
           ) : (
             <View style={styles.buttons}>
               <TouchableOpacity
@@ -199,8 +191,8 @@ const styles = StyleSheet.create({
     color: theme.colors.text,
     marginBottom: 10,
   },
-  spinner: {
-    alignSelf: "flex-start",
+  actionSkeleton: {
+    maxWidth: 240,
   },
   buttons: {
     flexDirection: "row",

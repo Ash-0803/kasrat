@@ -7,6 +7,7 @@ export interface UserProfile {
   currentStreak: number;
   longestStreak: number;
   createdAt: number; // Timestamp
+  completedOnboarding?: boolean;
   pushToken?: string;
   notificationPermissionBannerShown?: boolean;
 }

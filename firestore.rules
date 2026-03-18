@@ -1,0 +1,54 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function isAdmin() {
+      return isSignedIn() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin";
+    }
+
+    match /session_logs/{logId} {
+      allow create: if isSignedIn() && request.resource.data.uid == request.auth.uid;
+      allow read, update, delete: if isSignedIn() && resource.data.uid == request.auth.uid;
+    }
+
+    match /sessions/{sessionId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    match /shame/{dateId} {
+      allow read: if isSignedIn();
+      allow write: if false;
+
+      match /entries/{entryId} {
+        allow read: if isSignedIn();
+        allow write: if false;
+      }
+    }
+
+    match /users/{userId} {
+      allow read: if isSignedIn();
+
+      allow create: if isOwner(userId) &&
+        (!("role" in request.resource.data) || request.resource.data.role == "user");
+
+      allow update: if isOwner(userId) &&
+        request.resource.data.role == resource.data.role;
+
+      allow delete: if false;
+    }
+
+    match /config/{docId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+  }
+}

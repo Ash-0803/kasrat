@@ -1,16 +1,20 @@
 import { Ionicons } from "@expo/vector-icons";
 import { format } from "date-fns";
-import { doc, getDoc } from "firebase/firestore";
-import { useEffect, useState } from "react";
+import { useRouter } from "expo-router";
+import { collection, doc, getDoc, onSnapshot } from "firebase/firestore";
+import React, { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    FlatList,
-    RefreshControl,
-    StyleSheet,
-    Text,
-    View,
+  FlatList,
+  Pressable,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
+import ErrorBoundary from "../../components/ErrorBoundary";
 import SessionCard from "../../components/SessionCard";
+import Skeleton from "../../components/Skeleton";
+import StreakBadge from "../../components/StreakBadge";
 import { theme } from "../../constants/theme";
 import useAuth from "../../hooks/useAuth";
 import useTodaySessions from "../../hooks/useTodaySessions";
@@ -18,11 +22,13 @@ import { db } from "../../lib/firebase";
 import { claimSession, skipSession } from "../../lib/sessions";
 import { Session, UserProfile } from "../../types";
 
-export default function Home() {
+function HomeContent() {
+  const router = useRouter();
   const { user } = useAuth();
   const { sessions, userLogs, loading, refresh } = useTodaySessions(user?.uid);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [todayShameCount, setTodayShameCount] = useState(0);
 
   useEffect(() => {
     if (!user?.uid) return;
@@ -31,6 +37,23 @@ export default function Home() {
     });
   }, [user?.uid]);
 
+  useEffect(() => {
+    const today = format(new Date(), "yyyy-MM-dd");
+    const shameEntriesRef = collection(db, "shame", today, "entries");
+
+    const unsubscribe = onSnapshot(
+      shameEntriesRef,
+      (snapshot) => {
+        setTodayShameCount(snapshot.size);
+      },
+      () => {
+        setTodayShameCount(0);
+      },
+    );
+
+    return () => unsubscribe();
+  }, []);
+
   async function handleRefresh() {
     setRefreshing(true);
     refresh();
@@ -38,6 +61,7 @@ export default function Home() {
   }
 
   const todayLabel = format(new Date(), "EEEE, MMMM d");
+  const todayHasShame = todayShameCount > 0;
 
   return (
     <View style={styles.container}>
@@ -49,12 +73,34 @@ export default function Home() {
             <Text style={styles.dateText}>{todayLabel}</Text>
             {profile !== null && (
               <View style={styles.streakRow}>
-                <Ionicons name="flame" size={22} color="#FF5722" />
-                <Text style={styles.streakText}>
-                  {profile.currentStreak} day streak
+                <Text style={styles.streakLabel}>Current streak</Text>
+                <StreakBadge streak={profile.currentStreak} />
+                <Text style={styles.longestHint}>
+                  Longest: {profile.longestStreak}
                 </Text>
               </View>
             )}
+
+            {todayHasShame && (
+              <Pressable
+                style={styles.shameBanner}
+                onPress={() => router.push("/shame")}
+              >
+                <View style={styles.shameBannerCopy}>
+                  <Text style={styles.shameBannerTitle}>Wall of Shame</Text>
+                  <Text style={styles.shameBannerSubtitle}>
+                    {todayShameCount}{" "}
+                    {todayShameCount === 1 ? "entry" : "entries"} posted today
+                  </Text>
+                </View>
+                <Ionicons
+                  name="arrow-forward-circle"
+                  size={24}
+                  color={theme.colors.text}
+                />
+              </Pressable>
+            )}
+
             <Text style={styles.sectionLabel}>Today's Sessions</Text>
           </View>
         }
@@ -69,10 +115,15 @@ export default function Home() {
         contentContainerStyle={styles.list}
         ListEmptyComponent={
           loading ? (
-            <ActivityIndicator
-              style={styles.spinner}
-              color={theme.colors.primary}
-            />
+            <View style={styles.loadingList}>
+              {[0, 1, 2].map((item) => (
+                <Skeleton
+                  key={item}
+                  variant="card"
+                  style={styles.loadingCard}
+                />
+              ))}
+            </View>
           ) : (
             <Text style={styles.empty}>No sessions scheduled for today.</Text>
           )
@@ -82,6 +133,14 @@ export default function Home() {
         }
       />
     </View>
+  );
+}
+
+export default function Home() {
+  return (
+    <ErrorBoundary>
+      <HomeContent />
+    </ErrorBoundary>
   );
 }
 
@@ -104,12 +163,42 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     marginTop: 6,
-    gap: 6,
+    gap: 8,
   },
-  streakText: {
-    fontSize: 16,
+  streakLabel: {
+    fontSize: 14,
     fontWeight: "600",
-    color: "#FF5722",
+    color: theme.colors.text,
+  },
+  longestHint: {
+    fontSize: 13,
+    color: "#666",
+  },
+  shameBanner: {
+    alignItems: "center",
+    backgroundColor: "#F8E9D2",
+    borderColor: "#E5C79F",
+    borderRadius: 14,
+    borderWidth: 1,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  shameBannerCopy: {
+    flex: 1,
+    paddingRight: 10,
+  },
+  shameBannerTitle: {
+    color: theme.colors.text,
+    fontSize: 15,
+    fontWeight: "700",
+  },
+  shameBannerSubtitle: {
+    color: "#5C4A35",
+    marginTop: 4,
+    fontSize: 13,
   },
   sectionLabel: {
     marginTop: 20,
@@ -124,8 +213,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 30,
   },
-  spinner: {
-    marginTop: 40,
+  loadingList: {
+    gap: 12,
+    marginTop: 24,
+  },
+  loadingCard: {
+    height: 96,
   },
   empty: {
     textAlign: "center",

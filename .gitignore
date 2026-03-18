@@ -24,9 +24,15 @@ functions/lib/
 
 # Environment variables
 .env
+.env.*
 .env.local
 .env.development
 .env.production
+!.env.example
+
+# Firebase runtime secrets
+.runtimeconfig.json
+functions/.runtimeconfig.json
 
 # Build outputs
 *.jks

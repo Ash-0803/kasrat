@@ -1,8 +1,12 @@
 import { Stack } from "expo-router";
+import * as SplashScreen from "expo-splash-screen";
 import { useEffect, useState } from "react";
 import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import OnboardingModal from "../components/OnboardingModal";
+import { AuthProvider } from "../context/AuthContext";
 import useAuth from "../hooks/useAuth";
+import { loadRemoteAppConfig, subscribeToRemoteAppConfig } from "../lib/config";
 import {
   clearAllSessionAlarms,
   registerForPushNotificationsAsync,
@@ -10,9 +14,30 @@ import {
 } from "../lib/notifications";
 import { getTodaySessions } from "../lib/sessions";
 
-export default function Layout() {
-  const { user } = useAuth();
+SplashScreen.preventAutoHideAsync().catch(() => {
+  // Ignore: splash may already be prevented by platform bootstrap.
+});
+
+function RootLayoutContent() {
+  const { user, authLoading, profileLoading, onboardingRequired } = useAuth();
   const [showPermissionBanner, setShowPermissionBanner] = useState(false);
+
+  useEffect(() => {
+    if (!authLoading && !profileLoading) {
+      SplashScreen.hideAsync().catch(() => {
+        // Ignore: splash may already be hidden.
+      });
+    }
+  }, [authLoading, profileLoading]);
+
+  useEffect(() => {
+    void loadRemoteAppConfig();
+    const unsubscribe = subscribeToRemoteAppConfig();
+
+    return () => {
+      unsubscribe();
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -85,8 +110,18 @@ export default function Layout() {
       <Stack>
         <Stack.Screen name="index" />
         <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="shame" options={{ title: "Wall of Shame" }} />
       </Stack>
+      <OnboardingModal user={user} visible={onboardingRequired} />
     </SafeAreaProvider>
+  );
+}
+
+export default function Layout() {
+  return (
+    <AuthProvider>
+      <RootLayoutContent />
+    </AuthProvider>
   );
 }
 

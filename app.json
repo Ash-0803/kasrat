@@ -1,0 +1,30 @@
+{
+  "expo": {
+    "name": "Kasrat",
+    "slug": "kasrat",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0B132B"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "plugins": ["expo-router", "expo-image-picker", "expo-splash-screen"],
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0B132B"
+      }
+    },
+    "web": {
+      "bundler": "metro",
+      "favicon": "./assets/favicon.png"
+    }
+  }
+}

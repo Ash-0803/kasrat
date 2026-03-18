@@ -1,18 +1,20 @@
 import { format, parseISO, subDays } from "date-fns";
-import { useCallback, useEffect, useState } from "react";
+import { useLocalSearchParams } from "expo-router";
+import React, { useCallback, useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    RefreshControl,
-    SectionList,
-    StyleSheet,
-    Text,
-    View,
+  RefreshControl,
+  SectionList,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
+import ErrorBoundary from "../../components/ErrorBoundary";
+import Skeleton from "../../components/Skeleton";
 import { theme } from "../../constants/theme";
 import useAuth from "../../hooks/useAuth";
 import {
-    getSessionsForDateRange,
-    getUserLogsForDateRange,
+  getSessionsForDateRange,
+  getUserLogsForDateRange,
 } from "../../lib/sessions";
 import { Session, SessionLog } from "../../types";
 
@@ -87,20 +89,32 @@ function SessionRow({ session, log }: { session: Session; log?: SessionLog }) {
 type RowItem = { session: Session; log?: SessionLog };
 type Section = { title: string; data: RowItem[] };
 
-export default function Sessions() {
+function SessionsContent() {
   const { user } = useAuth();
+  const params = useLocalSearchParams<{ uid?: string }>();
   const [sections, setSections] = useState<Section[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
+  const targetUid =
+    user?.uid && typeof params.uid === "string" && params.uid === user.uid
+      ? params.uid
+      : user?.uid;
+
   const load = useCallback(async () => {
-    if (!user?.uid) return;
+    if (!targetUid) {
+      setSections([]);
+      setLoading(false);
+      setRefreshing(false);
+      return;
+    }
+
     const today = format(new Date(), "yyyy-MM-dd");
     const startDate = format(subDays(new Date(), 13), "yyyy-MM-dd");
 
     const [sessionsList, logsList] = await Promise.all([
       getSessionsForDateRange(startDate, today),
-      getUserLogsForDateRange(user.uid, startDate, today),
+      getUserLogsForDateRange(targetUid, startDate, today),
     ]);
 
     const logsMap: Record<string, SessionLog> = {};
@@ -126,16 +140,21 @@ export default function Sessions() {
     setSections(built);
     setLoading(false);
     setRefreshing(false);
-  }, [user?.uid]);
+  }, [targetUid]);
 
   useEffect(() => {
+    setLoading(true);
     load();
   }, [load]);
 
   if (loading && !refreshing) {
     return (
-      <View style={[styles.container, styles.centered]}>
-        <ActivityIndicator color={theme.colors.primary} />
+      <View style={styles.container}>
+        <View style={styles.loadingList}>
+          {[0, 1, 2].map((item) => (
+            <Skeleton key={item} variant="card" style={styles.loadingCard} />
+          ))}
+        </View>
       </View>
     );
   }
@@ -158,12 +177,20 @@ export default function Sessions() {
             refreshing={refreshing}
             onRefresh={() => {
               setRefreshing(true);
-              load();
+              void load();
             }}
           />
         }
       />
     </View>
+  );
+}
+
+export default function Sessions() {
+  return (
+    <ErrorBoundary>
+      <SessionsContent />
+    </ErrorBoundary>
   );
 }
 
@@ -175,6 +202,14 @@ const styles = StyleSheet.create({
   centered: {
     justifyContent: "center",
     alignItems: "center",
+  },
+  loadingList: {
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingTop: 24,
+  },
+  loadingCard: {
+    height: 84,
   },
   list: {
     paddingBottom: 30,

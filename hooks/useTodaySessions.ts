@@ -1,8 +1,8 @@
-import { format } from "date-fns";
-import { collection, onSnapshot, query, where } from "firebase/firestore";
-import { useCallback, useEffect, useState } from "react";
-import { db } from "../lib/firebase";
+import { collection, query, where, onSnapshot } from "firebase/firestore";
+import { useState, useEffect, useCallback } from "react";
 import { Session, SessionLog } from "../types";
+import { db } from "../lib/firebase";
+import { format } from "date-fns";
 
 export default function useTodaySessions(uid?: string) {
   const [sessions, setSessions] = useState<Session[]>([]);
