@@ -13,6 +13,7 @@ import {
   scheduleDailySessionAlarm,
 } from "../lib/notifications";
 import { getTodaySessions } from "../lib/sessions";
+import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS, SHADOWS } from "../constants/theme";
 
 SplashScreen.preventAutoHideAsync().catch(() => {
   // Ignore: splash may already be prevented by platform bootstrap.
@@ -127,44 +128,46 @@ export default function Layout() {
 
 const styles = StyleSheet.create({
   banner: {
-    backgroundColor: "#FFF3CD",
-    borderBottomColor: "#E8D7A0",
+    backgroundColor: COLORS.accentLight,
+    borderBottomColor: COLORS.accent,
     borderBottomWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
   },
   bannerText: {
-    color: "#4A3D1A",
-    fontSize: 13,
-    fontWeight: "500",
-    lineHeight: 18,
+    color: COLORS.primaryDark,
+    fontSize: TYPOGRAPHY.sm,
+    fontWeight: TYPOGRAPHY.medium,
+    lineHeight: TYPOGRAPHY.normalLineHeight,
+    textAlign: "center",
   },
   bannerActions: {
     flexDirection: "row",
-    gap: 8,
-    marginTop: 10,
+    gap: SPACING.sm,
+    marginTop: SPACING.sm,
   },
   settingsButton: {
-    backgroundColor: "#4A3D1A",
-    borderRadius: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
+    backgroundColor: COLORS.accent,
+    borderRadius: BORDER_RADIUS.md,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    ...SHADOWS.sm,
   },
   settingsButtonText: {
-    color: "#FFF",
-    fontSize: 12,
-    fontWeight: "700",
+    color: COLORS.textInverse,
+    fontSize: TYPOGRAPHY.xs,
+    fontWeight: TYPOGRAPHY.semibold,
   },
   dismissButton: {
-    borderColor: "#4A3D1A",
-    borderRadius: 6,
+    borderColor: COLORS.accent,
+    borderRadius: BORDER_RADIUS.md,
     borderWidth: 1,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
   },
   dismissButtonText: {
-    color: "#4A3D1A",
-    fontSize: 12,
-    fontWeight: "700",
+    color: COLORS.accent,
+    fontSize: TYPOGRAPHY.xs,
+    fontWeight: TYPOGRAPHY.semibold,
   },
 });

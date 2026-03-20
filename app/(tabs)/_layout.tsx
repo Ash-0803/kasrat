@@ -1,19 +1,32 @@
 import { Tabs } from "expo-router";
-import { Text } from "react-native";
+import { Text, StyleSheet } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import useAdminGuard from "../../hooks/useAdminGuard";
+import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS } from "../../constants/theme";
 
 export default function TabsLayout() {
   const { isAdmin, loading } = useAdminGuard(false);
+  const insets = useSafeAreaInsets();
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: "#007AFF",
-        tabBarInactiveTintColor: "#8E8E93",
+        tabBarActiveTintColor: COLORS.primary,
+        tabBarInactiveTintColor: COLORS.textTertiary,
         tabBarStyle: {
-          backgroundColor: "#F2F2F7",
-          borderTopColor: "#E5E5EA",
+          backgroundColor: COLORS.background,
+          borderTopColor: COLORS.border,
+          borderTopWidth: 1,
+          paddingTop: SPACING.sm,
+          paddingBottom: Math.max(insets.bottom, SPACING.sm),
+          height: 80 + Math.max(insets.bottom - SPACING.sm, 0),
         },
+        tabBarLabelStyle: {
+          fontSize: TYPOGRAPHY.xs,
+          fontWeight: TYPOGRAPHY.medium,
+          marginTop: SPACING.xs,
+        },
+        headerShown: false, // Remove headers since we have bottom tabs
       }}
     >
       <Tabs.Screen
@@ -84,5 +97,9 @@ function TabIcon({
     person: "👤",
   };
 
-  return <Text style={{ color, fontSize: size }}>{icons[name] || "📱"}</Text>;
+  return (
+    <Text style={{ color, fontSize: size, marginBottom: SPACING.xs }}>
+      {icons[name] || "📱"}
+    </Text>
+  );
 }

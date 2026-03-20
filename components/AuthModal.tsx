@@ -10,9 +10,14 @@ import {
   TouchableOpacity,
   View,
   Alert,
+  Modal,
+  Dimensions,
 } from "react-native";
 import { useState } from "react";
 import { auth } from "../lib/firebase";
+import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS, SHADOWS } from "../constants/theme";
+
+const { width: screenWidth } = Dimensions.get("window");
 
 interface AuthModalProps {
   visible: boolean;
@@ -30,10 +35,8 @@ export default function AuthModal({ visible, onClose }: AuthModalProps) {
       setLoading(true);
 
       if (mode === "guest") {
-        // Try anonymous sign in first
         await signInAnonymously(auth);
       } else {
-        // Create a test account with email/password
         if (!email || !password) {
           Alert.alert("Error", "Please enter email and password");
           return;
@@ -46,14 +49,12 @@ export default function AuthModal({ visible, onClose }: AuthModalProps) {
       console.error("Auth failed:", error);
 
       if (error.code === "auth/operation-not-allowed") {
-        // Anonymous auth not enabled, try creating a test user instead
         Alert.alert(
           "Guest Access Unavailable",
           "Anonymous authentication is not enabled. Please sign up with email instead.",
           [{ text: "OK", onPress: () => setMode("signup") }],
         );
       } else if (error.code === "auth/email-already-in-use") {
-        // Try signing in instead
         try {
           await signInWithEmailAndPassword(auth, email, password);
           onClose();
@@ -74,143 +75,178 @@ export default function AuthModal({ visible, onClose }: AuthModalProps) {
     }
   };
 
-  if (!visible) return null;
-
   return (
-    <View style={styles.overlay}>
-      <View style={styles.modal}>
-        <Text style={styles.title}>Sign In to Kasrat</Text>
-        <Text style={styles.subtitle}>Start your fitness journey</Text>
+    <Modal
+      visible={visible}
+      transparent={true}
+      animationType="fade"
+      onRequestClose={onClose}
+    >
+      <View style={styles.overlay}>
+        <View style={styles.modal}>
+          <View style={styles.header}>
+            <Text style={styles.title}>Welcome to Kasrat</Text>
+            <Text style={styles.subtitle}>
+              {mode === "guest" 
+                ? "Continue as a guest to explore" 
+                : "Create your account to get started"
+              }
+            </Text>
+          </View>
 
-        {mode === "signup" && (
-          <>
-            <TextInput
-              style={styles.input}
-              placeholder="Email"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Password"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-            />
-          </>
-        )}
+          <View style={styles.form}>
+            {mode === "signup" && (
+              <>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Email address"
+                  placeholderTextColor={COLORS.textTertiary}
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoComplete="email"
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Password"
+                  placeholderTextColor={COLORS.textTertiary}
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry
+                  autoComplete="password"
+                />
+              </>
+            )}
 
-        <TouchableOpacity
-          style={[
-            styles.button,
-            mode === "guest" ? styles.anonymousButton : styles.signupButton,
-          ]}
-          onPress={handleAuth}
-          disabled={loading}
-        >
-          <Text style={styles.buttonText}>
-            {loading
-              ? "Signing in..."
-              : mode === "guest"
-                ? "Continue as Guest"
-                : "Sign Up"}
-          </Text>
-        </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.primaryButton,
+                loading && styles.primaryButtonDisabled,
+              ]}
+              onPress={handleAuth}
+              disabled={loading}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.primaryButtonText}>
+                {loading
+                  ? "Signing in..."
+                  : mode === "guest"
+                    ? "Continue as Guest"
+                    : "Create Account"}
+              </Text>
+            </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.switchButton}
-          onPress={() => setMode(mode === "guest" ? "signup" : "guest")}
-        >
-          <Text style={styles.switchButtonText}>
-            {mode === "guest"
-              ? "Sign up with email instead"
-              : "Continue as guest instead"}
-          </Text>
-        </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.secondaryButton}
+              onPress={() => setMode(mode === "guest" ? "signup" : "guest")}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.secondaryButtonText}>
+                {mode === "guest"
+                  ? "Sign up with email instead"
+                  : "Continue as guest instead"}
+              </Text>
+            </TouchableOpacity>
+          </View>
 
-        <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
-          <Text style={styles.cancelButtonText}>Cancel</Text>
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.closeButton}
+            onPress={onClose}
+            activeOpacity={0.6}
+          >
+            <Text style={styles.closeButtonText}>Cancel</Text>
+          </TouchableOpacity>
+        </View>
       </View>
-    </View>
+    </Modal>
   );
 }
 
 const styles = StyleSheet.create({
   overlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.4)",
     justifyContent: "center",
     alignItems: "center",
-    zIndex: 1000,
+    padding: SPACING.lg,
   },
   modal: {
-    backgroundColor: "white",
-    padding: 30,
-    borderRadius: 15,
-    width: "80%",
+    backgroundColor: COLORS.background,
+    borderRadius: BORDER_RADIUS['2xl'],
+    width: Math.min(screenWidth * 0.9, 400),
     maxWidth: 400,
+    ...SHADOWS.lg,
+  },
+  header: {
+    padding: SPACING.xl,
+    paddingBottom: SPACING.lg,
     alignItems: "center",
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.borderLight,
   },
   title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    marginBottom: 10,
+    fontSize: TYPOGRAPHY['2xl'],
+    fontWeight: TYPOGRAPHY.bold,
+    color: COLORS.textPrimary,
+    marginBottom: SPACING.sm,
     textAlign: "center",
   },
   subtitle: {
-    fontSize: 16,
-    color: "#666",
-    marginBottom: 20,
+    fontSize: TYPOGRAPHY.base,
+    color: COLORS.textSecondary,
     textAlign: "center",
+    lineHeight: TYPOGRAPHY.normalLineHeight,
+  },
+  form: {
+    padding: SPACING.xl,
   },
   input: {
     borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    padding: 12,
-    width: "100%",
-    marginBottom: 15,
-    fontSize: 16,
+    borderColor: COLORS.border,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.md,
+    fontSize: TYPOGRAPHY.base,
+    color: COLORS.textPrimary,
+    backgroundColor: COLORS.backgroundSecondary,
+    marginBottom: SPACING.md,
   },
-  button: {
-    padding: 15,
-    borderRadius: 8,
-    width: "100%",
+  primaryButton: {
+    backgroundColor: COLORS.primary,
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.xl,
+    borderRadius: BORDER_RADIUS.lg,
     alignItems: "center",
-    marginBottom: 10,
+    marginBottom: SPACING.md,
+    ...SHADOWS.sm,
   },
-  anonymousButton: {
-    backgroundColor: "#34C759",
+  primaryButtonDisabled: {
+    backgroundColor: COLORS.gray300,
+    opacity: 0.6,
   },
-  signupButton: {
-    backgroundColor: "#007AFF",
+  primaryButtonText: {
+    color: COLORS.textInverse,
+    fontSize: TYPOGRAPHY.base,
+    fontWeight: TYPOGRAPHY.semibold,
   },
-  buttonText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "600",
+  secondaryButton: {
+    paddingVertical: SPACING.sm,
+    alignItems: "center",
   },
-  switchButton: {
-    padding: 10,
-    marginBottom: 10,
+  secondaryButtonText: {
+    color: COLORS.accent,
+    fontSize: TYPOGRAPHY.sm,
+    fontWeight: TYPOGRAPHY.medium,
   },
-  switchButtonText: {
-    color: "#007AFF",
-    fontSize: 14,
-    textDecorationLine: "underline",
+  closeButton: {
+    padding: SPACING.md,
+    alignItems: "center",
+    borderTopWidth: 1,
+    borderTopColor: COLORS.borderLight,
   },
-  cancelButton: {
-    padding: 10,
-  },
-  cancelButtonText: {
-    color: "#666",
-    fontSize: 14,
+  closeButtonText: {
+    color: COLORS.textTertiary,
+    fontSize: TYPOGRAPHY.sm,
+    fontWeight: TYPOGRAPHY.medium,
   },
 });

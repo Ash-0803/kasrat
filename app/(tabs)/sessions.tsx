@@ -7,10 +7,13 @@ import {
   StyleSheet,
   Text,
   View,
+  TouchableOpacity,
+  ScrollView,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import ErrorBoundary from "../../components/ErrorBoundary";
 import Skeleton from "../../components/Skeleton";
-import { theme } from "../../constants/theme";
+import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS, SHADOWS } from "../../constants/theme";
 import useAuth from "../../hooks/useAuth";
 import {
   getSessionsForDateRange,
@@ -30,12 +33,12 @@ const CHIP_CONFIG: Record<
   ChipStatus,
   { label: string; bg: string; color: string }
 > = {
-  upcoming: { label: "Upcoming", bg: theme.colors.surface, color: "#666" },
-  claimed: { label: "Claimed", bg: "#E8F5E9", color: theme.colors.success },
-  verified: { label: "Verified", bg: "#E3F2FD", color: "#1565C0" },
-  lied: { label: "Lied", bg: "#FFEBEE", color: theme.colors.danger },
+  upcoming: { label: "Upcoming", bg: COLORS.backgroundSecondary, color: COLORS.textSecondary },
+  claimed: { label: "Claimed", bg: COLORS.successLight, color: COLORS.success },
+  verified: { label: "Verified", bg: COLORS.accentLight, color: COLORS.accent },
+  lied: { label: "Lied", bg: "#FFEBEE", color: "#DC3545" },
   skipped: { label: "Skipped", bg: "#FFF8E1", color: "#E65100" },
-  cancelled: { label: "Cancelled", bg: "#FFEBEE", color: theme.colors.danger },
+  cancelled: { label: "Cancelled", bg: "#FFEBEE", color: "#DC3545" },
 };
 
 function StatusChip({ status }: { status: ChipStatus }) {
@@ -76,7 +79,7 @@ function SessionRow({ session, log }: { session: Session; log?: SessionLog }) {
         <Text
           style={[
             styles.verifyBadge,
-            log.status === "lied" && { color: theme.colors.danger },
+            log.status === "lied" && { color: "#DC3545" },
           ]}
         >
           {log.status === "verified" ? "✓" : "⚠"}
@@ -95,6 +98,7 @@ function SessionsContent() {
   const [sections, setSections] = useState<Section[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const insets = useSafeAreaInsets();
 
   const targetUid =
     user?.uid && typeof params.uid === "string" && params.uid === user.uid
@@ -160,7 +164,7 @@ function SessionsContent() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       <SectionList
         sections={sections}
         keyExtractor={(item) => item.session.id}
@@ -197,68 +201,70 @@ export default function Sessions() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.surface,
+    backgroundColor: COLORS.backgroundSecondary,
+    paddingBottom: 100,
   },
   centered: {
     justifyContent: "center",
     alignItems: "center",
   },
   loadingList: {
-    gap: 12,
-    paddingHorizontal: 16,
-    paddingTop: 24,
+    gap: SPACING.sm,
+    paddingHorizontal: SPACING.md,
+    paddingTop: SPACING.xl,
   },
   loadingCard: {
     height: 84,
   },
   list: {
-    paddingBottom: 30,
+    paddingBottom: SPACING.xl,
   },
   sectionHeader: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: "#888",
+    fontSize: TYPOGRAPHY.sm,
+    fontWeight: TYPOGRAPHY.bold,
+    color: COLORS.textTertiary,
     textTransform: "uppercase",
     letterSpacing: 0.5,
-    paddingHorizontal: 16,
-    paddingTop: 20,
-    paddingBottom: 6,
+    paddingHorizontal: SPACING.md,
+    paddingTop: SPACING.lg,
+    paddingBottom: SPACING.sm,
   },
   row: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: theme.colors.background,
-    marginHorizontal: 16,
-    marginBottom: 8,
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    gap: 10,
+    backgroundColor: COLORS.background,
+    marginHorizontal: SPACING.md,
+    marginBottom: SPACING.sm,
+    borderRadius: BORDER_RADIUS.lg,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.md,
+    gap: SPACING.sm,
+    ...SHADOWS.sm,
   },
   rowTime: {
     flex: 1,
-    fontSize: 16,
-    fontWeight: "600",
-    color: theme.colors.text,
+    fontSize: TYPOGRAPHY.base,
+    fontWeight: TYPOGRAPHY.semibold,
+    color: COLORS.textPrimary,
   },
   chip: {
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 20,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
+    borderRadius: BORDER_RADIUS.xl,
   },
   chipText: {
-    fontSize: 13,
-    fontWeight: "600",
+    fontSize: TYPOGRAPHY.sm,
+    fontWeight: TYPOGRAPHY.semibold,
   },
   verifyBadge: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: theme.colors.success,
+    fontSize: TYPOGRAPHY.base,
+    fontWeight: TYPOGRAPHY.bold,
+    color: COLORS.success,
   },
   empty: {
     textAlign: "center",
-    marginTop: 40,
-    color: "#999",
-    fontSize: 15,
+    marginTop: SPACING.xl,
+    color: COLORS.textTertiary,
+    fontSize: TYPOGRAPHY.base,
   },
 });
