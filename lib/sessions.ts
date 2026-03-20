@@ -102,17 +102,24 @@ export const getUserLogsForDateRange = async (
   startDate: string,
   endDate: string,
 ): Promise<SessionLog[]> => {
-  const q = query(
+  // Use multiple simple queries instead of a composite query
+  const logs: SessionLog[] = [];
+
+  // Get all logs for the user first
+  const userQuery = query(
     collection(db, LOGS_COLLECTION),
     where("uid", "==", uid),
-    where("date", ">=", startDate),
-    where("date", "<=", endDate),
   );
-  const snapshot = await getDocs(q);
-  const logs: SessionLog[] = [];
-  snapshot.forEach((docSnap) => {
-    logs.push({ id: docSnap.id, ...docSnap.data() } as SessionLog);
+  const userSnapshot = await getDocs(userQuery);
+
+  // Filter by date range in memory
+  userSnapshot.forEach((docSnap) => {
+    const log = { id: docSnap.id, ...docSnap.data() } as SessionLog;
+    if (log.date >= startDate && log.date <= endDate) {
+      logs.push(log);
+    }
   });
+
   return logs;
 };
 

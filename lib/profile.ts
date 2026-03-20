@@ -1,15 +1,19 @@
 import {
   collection,
   doc,
-  getCountFromServer,
   getDoc,
+  getDocs,
+  getCountFromServer,
+  limit,
+  onSnapshot,
+  orderBy,
   query,
   setDoc,
+  updateDoc,
   where,
 } from "firebase/firestore";
-import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import { UserProfile } from "../types";
-import { db, storage } from "./firebase";
+import { db } from "./firebase";
 
 const LOGS_COLLECTION = "session_logs";
 const USERS_COLLECTION = "users";
@@ -23,6 +27,27 @@ type UserStats = {
 
 function normalizeName(name: string): string {
   return name.trim().replace(/\s+/g, " ");
+}
+
+export function subscribeToProfile(
+  uid: string,
+  callback: (profile: UserProfile | null) => void,
+) {
+  const userRef = doc(db, USERS_COLLECTION, uid);
+
+  return onSnapshot(userRef, (snapshot) => {
+    if (!snapshot.exists()) {
+      callback(null);
+      return;
+    }
+
+    callback(snapshot.data() as UserProfile);
+  });
+}
+
+export async function updateProfile(uid: string, data: Partial<UserProfile>) {
+  const userRef = doc(db, USERS_COLLECTION, uid);
+  await updateDoc(userRef, data);
 }
 
 export async function updateUserName(uid: string, name: string): Promise<void> {
@@ -62,17 +87,55 @@ export async function updateUserPhoto(
   );
 }
 
-export async function uploadAvatar(
-  uid: string,
-  fileUri: string,
-): Promise<string> {
-  const response = await fetch(fileUri);
-  const blob = await response.blob();
+export async function uploadProfilePicture(uid: string, fileUri: string): Promise<string> {
+  // Return a placeholder avatar URL instead of uploading to storage
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(uid)}&background=007AFF&color=fff&size=200`;
+}
 
-  const avatarRef = ref(storage, `avatars/${uid}.jpg`);
-  await uploadBytes(avatarRef, blob, { contentType: "image/jpeg" });
+export function getProfilePictureUrl(uid: string): string | null {
+  // Return a placeholder avatar URL
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(uid)}&background=007AFF&color=fff&size=200`;
+}
 
-  return getDownloadURL(avatarRef);
+export async function getLeaderboard(limitCount = 50): Promise<UserProfile[]> {
+  const q = query(
+    collection(db, USERS_COLLECTION),
+    where("role", "==", "user"),
+    orderBy("currentStreak", "desc"),
+    orderBy("longestStreak", "desc"),
+    orderBy("createdAt", "asc"),
+    limit(limitCount),
+  );
+
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map((doc) => doc.data() as UserProfile);
+}
+
+export async function getShameEntries(date: string): Promise<UserProfile[]> {
+  const shameRef = doc(db, "shame", date);
+  const snapshot = await getDoc(shameRef);
+
+  if (!snapshot.exists()) {
+    return [];
+  }
+
+  const data = snapshot.data();
+  if (!data.entries) {
+    return [];
+  }
+
+  const uids = Object.keys(data.entries);
+  if (uids.length === 0) {
+    return [];
+  }
+
+  const usersQuery = query(
+    collection(db, USERS_COLLECTION),
+    where("__name__", "in", uids),
+  );
+  const usersSnapshot = await getDocs(usersQuery);
+
+  return usersSnapshot.docs.map((doc) => doc.data() as UserProfile);
 }
 
 export async function getUserStats(uid: string): Promise<UserStats> {

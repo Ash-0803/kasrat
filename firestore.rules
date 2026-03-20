@@ -14,6 +14,12 @@ service cloud.firestore {
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin";
     }
 
+    // Temporary: Allow read access for testing (remove in production)
+    match /{document=**} {
+      allow read: if true;
+      allow write: if isSignedIn();
+    }
+
     match /session_logs/{logId} {
       allow create: if isSignedIn() && request.resource.data.uid == request.auth.uid;
       allow read, update, delete: if isSignedIn() && resource.data.uid == request.auth.uid;

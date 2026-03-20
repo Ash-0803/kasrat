@@ -1,6 +1,4 @@
-import { getDownloadURL, ref } from "firebase/storage";
 import { UserProfile } from "../types";
-import { storage } from "./firebase";
 
 const HTTP_URL_PATTERN = /^https?:\/\//i;
 
@@ -21,20 +19,23 @@ export function resolveDisplayName(
 
 export async function resolveProfilePhotoUrl(
   photoValue: string | null | undefined,
+  uid?: string,
 ): Promise<string | null> {
   const candidate = typeof photoValue === "string" ? photoValue.trim() : "";
 
   if (!candidate) {
-    return null;
+    // Return placeholder avatar if no photo URL
+    return uid
+      ? `https://ui-avatars.com/api/?name=${encodeURIComponent(uid)}&background=007AFF&color=fff&size=200`
+      : null;
   }
 
   if (HTTP_URL_PATTERN.test(candidate)) {
     return candidate;
   }
 
-  try {
-    return await getDownloadURL(ref(storage, candidate));
-  } catch {
-    return null;
-  }
+  // Return placeholder avatar for any non-HTTP values
+  return uid
+    ? `https://ui-avatars.com/api/?name=${encodeURIComponent(uid)}&background=007AFF&color=fff&size=200`
+    : null;
 }

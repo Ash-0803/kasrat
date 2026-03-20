@@ -13,7 +13,7 @@ import {
 } from "react-native";
 import { theme } from "../constants/theme";
 import { db } from "../lib/firebase";
-import { updateUserName, updateUserPhoto, uploadAvatar } from "../lib/profile";
+import { updateUserName, uploadProfilePicture } from "../lib/profile";
 import Skeleton from "./Skeleton";
 
 type OnboardingModalProps = {
@@ -42,7 +42,6 @@ export default function OnboardingModal({
 
   const nameIsValid = useMemo(() => name.trim().length > 0, [name]);
   const currentPhotoUrl = user?.photoURL?.trim() ?? "";
-  const hasPhoto = pickedAvatarUri !== null || currentPhotoUrl.length > 0;
 
   async function handlePickAvatar() {
     setError(null);
@@ -69,8 +68,8 @@ export default function OnboardingModal({
       return;
     }
 
-    if (!nameIsValid || !hasPhoto) {
-      setError("Please add a name and a profile photo to continue.");
+    if (!nameIsValid) {
+      setError("Please add your name to continue.");
       return;
     }
 
@@ -83,8 +82,7 @@ export default function OnboardingModal({
 
       let nextPhotoUrl = currentPhotoUrl;
       if (pickedAvatarUri) {
-        nextPhotoUrl = await uploadAvatar(user.uid, pickedAvatarUri);
-        await updateUserPhoto(user.uid, nextPhotoUrl);
+        nextPhotoUrl = await uploadProfilePicture(user.uid, pickedAvatarUri);
       }
 
       await updateProfile(user, {
@@ -119,7 +117,7 @@ export default function OnboardingModal({
         <View style={styles.card}>
           <Text style={styles.title}>Finish your profile</Text>
           <Text style={styles.subtitle}>
-            Add your name and photo before entering Kasrat.
+            Add your name to get started with Kasrat.
           </Text>
 
           <Pressable style={styles.avatarPressable} onPress={handlePickAvatar}>
@@ -131,7 +129,9 @@ export default function OnboardingModal({
               <Skeleton variant="avatar" style={styles.avatar} />
             ) : (
               <View style={[styles.avatar, styles.avatarFallback]}>
-                <Text style={styles.avatarFallbackText}>Add photo</Text>
+                <Text style={styles.avatarFallbackText}>
+                  Add photo (optional)
+                </Text>
               </View>
             )}
           </Pressable>
@@ -150,11 +150,10 @@ export default function OnboardingModal({
           <Pressable
             style={[
               styles.saveButton,
-              (!nameIsValid || !hasPhoto || saving) &&
-                styles.saveButtonDisabled,
+              (!nameIsValid || saving) && styles.saveButtonDisabled,
             ]}
             onPress={handleComplete}
-            disabled={!nameIsValid || !hasPhoto || saving}
+            disabled={!nameIsValid || saving}
           >
             <Text style={styles.saveButtonText}>
               {saving ? "Saving..." : "Complete onboarding"}
